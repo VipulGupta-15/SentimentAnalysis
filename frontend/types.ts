@@ -14,8 +14,18 @@ export interface AudienceReaction {
   keywords: string[];
 }
 
+export interface BrandSafety {
+  score: number;
+  riskLevel: 'Low' | 'Medium' | 'High';
+  flags: string[];
+}
+
 export interface AnalysisResult {
   sentiment: Sentiment;
   emotion: Emotion;
   audienceReaction: AudienceReaction;
+  brandSafety: BrandSafety;
+  executiveSummary: string;
+  targetPlatform?: string;
+  targetDemographic?: string;
 }

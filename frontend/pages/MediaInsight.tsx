@@ -1,5 +1,4 @@
 import React, { useState, useCallback } from 'react';
-import { Header } from '../components/Header';
 import { FileUploader } from '../components/FileUploader';
 import { Loader } from '../components/Loader';
 import { AnalysisResultDisplay } from '../components/AnalysisResultDisplay';
@@ -13,6 +12,11 @@ export const MediaInsight: React.FC = () => {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [mediaForAnalysis, setMediaForAnalysis] = useState<string[] | null>(null);
     const [prompt, setPrompt] = useState<string>('');
+    
+    // New Campaign Settings State
+    const [targetPlatform, setTargetPlatform] = useState<string>('Instagram Reels');
+    const [targetDemographic, setTargetDemographic] = useState<string>('General Audience');
+
     const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
@@ -72,7 +76,14 @@ export const MediaInsight: React.FC = () => {
         setAnalysisResult(null);
 
         try {
-            const result = await analyzeMedia(mediaForAnalysis, selectedFile.type, prompt);
+            // Updated service call with Campaign Settings
+            const result = await analyzeMedia(
+                mediaForAnalysis, 
+                selectedFile.type, 
+                prompt,
+                targetPlatform,
+                targetDemographic
+            );
             setAnalysisResult(result);
         } catch (err) {
             console.error(err);
@@ -92,6 +103,8 @@ export const MediaInsight: React.FC = () => {
         setIsLoading(false);
         setUrlInput('');
         setAnalysisMode('upload');
+        setTargetPlatform('Instagram Reels');
+        setTargetDemographic('General Audience');
     };
 
     const handleUrlSubmit = async () => {
@@ -138,7 +151,6 @@ export const MediaInsight: React.FC = () => {
 
     return (
         <div className="flex flex-col flex-grow bg-[#0f1115] text-gray-200 min-h-screen font-sans selection:bg-blue-500/30">
-            <Header />
             
             {/* High-end Header Section */}
             <header className="relative overflow-hidden text-center py-16 md:py-24 border-b border-gray-800 bg-[#0f1115]">
@@ -242,20 +254,52 @@ export const MediaInsight: React.FC = () => {
 
                                 {/* Custom Prompting Area */}
                                 <div className="w-full lg:w-1/2 flex flex-col">
-                                    <h3 className="text-2xl font-bold mb-4 text-gray-100 flex items-center gap-2">
+                                    <h3 className="text-2xl font-bold mb-4 text-gray-100 flex items-center gap-2 border-b border-gray-800 pb-4">
                                         <span className="p-1.5 bg-indigo-500/20 rounded-md text-indigo-400">
                                             <Icon name="analysis" className="w-5 h-5"/>
                                         </span>
                                         Agency Console
                                     </h3>
-                                    <p className="text-gray-400 text-sm mb-4 leading-relaxed">Customize your analysis point-of-view. Tell the AI context about your campaign.</p>
+                                    
+                                    {/* Campaign Settings */}
+                                    <div className="grid grid-cols-2 gap-4 mb-4">
+                                        <div>
+                                            <label className="block text-xs uppercase tracking-widest text-gray-500 mb-2">Target Platform</label>
+                                            <select 
+                                                value={targetPlatform} 
+                                                onChange={(e) => setTargetPlatform(e.target.value)}
+                                                className="w-full bg-gray-900/50 border border-gray-700/80 rounded-xl p-3 text-sm text-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none appearance-none"
+                                                disabled={isLoading}
+                                            >
+                                                <option>Instagram Reels</option>
+                                                <option>TikTok</option>
+                                                <option>YouTube Shorts</option>
+                                                <option>LinkedIn</option>
+                                                <option>X / Twitter</option>
+                                                <option>General Display Ad</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs uppercase tracking-widest text-gray-500 mb-2">Target Demographic</label>
+                                            <input 
+                                                type="text"
+                                                value={targetDemographic} 
+                                                onChange={(e) => setTargetDemographic(e.target.value)}
+                                                placeholder="e.g., Gen Z, Boomers..."
+                                                className="w-full bg-gray-900/50 border border-gray-700/80 rounded-xl p-3 text-sm text-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                                disabled={isLoading}
+                                            />
+                                        </div>
+                                    </div>
+
                                     <textarea
                                         value={prompt}
                                         onChange={(e) => setPrompt(e.target.value)}
-                                        placeholder="E.g., 'Analyze this ad for youth fashion. Focus on the expressions and predict Gen-Z engagement levels...'"
-                                        className="w-full flex-grow min-h-[120px] p-4 bg-gray-900/50 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors placeholder-gray-600 text-gray-200 resize-none shadow-inner outline-none custom-scrollbar mb-6 leading-relaxed"
+                                        placeholder="Optional: Add specific focus for the AI. ('Analyze this ad for youth fashion. Focus on the expressions...')"
+                                        className="w-full flex-grow min-h-[90px] p-4 bg-gray-900/50 border border-gray-700/80 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm transition-colors placeholder-gray-600 text-gray-200 resize-none shadow-inner outline-none custom-scrollbar mb-6 leading-relaxed"
                                         disabled={isLoading}
                                     />
+                                    
                                     <button
                                         onClick={handleAnalyzeClick}
                                         disabled={isLoading}
