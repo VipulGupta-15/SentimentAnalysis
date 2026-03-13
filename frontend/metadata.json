@@ -1,0 +1,5 @@
+{
+  "name": "Copy of Media Insight AI",
+  "description": "An advanced tool that leverages the Gemini API to provide detailed content and sentiment analysis for user-uploaded videos and images. Simply upload a media file to receive comprehensive insights.",
+  "requestFramePermissions": []
+}
