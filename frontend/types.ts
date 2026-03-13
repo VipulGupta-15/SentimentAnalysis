@@ -4,12 +4,18 @@ export interface Sentiment {
 }
 
 export interface Emotion {
-  label: string;
+  label: 'Angry' | 'Disgusted' | 'Fearful' | 'Happy (Joy)' | 'Neutral' | 'Sad' | 'Surprised';
   score: number;
+}
+
+export interface AudienceReaction {
+  prediction: string;
+  growthPercent: number;
+  keywords: string[];
 }
 
 export interface AnalysisResult {
   sentiment: Sentiment;
   emotion: Emotion;
-  userReaction: string[];
+  audienceReaction: AudienceReaction;
 }

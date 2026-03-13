@@ -2,124 +2,153 @@ import React from 'react';
 import { type AnalysisResult, type Sentiment, type Emotion } from '../types';
 import { Icon } from './Icon';
 
-const SentimentIndicator: React.FC<{ sentiment: Sentiment }> = ({ sentiment }) => {
-  const getSentimentDetails = () => {
+const SentimentGauge: React.FC<{ sentiment: Sentiment }> = ({ sentiment }) => {
+  const getSentimentStyling = () => {
     switch (sentiment.label) {
       case 'Positive':
-        return {
-          color: 'text-green-400',
-          bgColor: 'bg-green-900/50',
-          icon: <Icon name="positive" />,
-        };
+        return { color: 'text-emerald-400', barBg: 'bg-emerald-500', icon: 'M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' };
       case 'Negative':
-        return {
-          color: 'text-red-400',
-          bgColor: 'bg-red-900/50',
-          icon: <Icon name="negative" />,
-        };
+        return { color: 'text-red-400', barBg: 'bg-red-500', icon: 'M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' };
       default:
-        return {
-          color: 'text-yellow-400',
-          bgColor: 'bg-yellow-900/50',
-          icon: <Icon name="neutral" />,
-        };
+        return { color: 'text-amber-400', barBg: 'bg-amber-500', icon: 'M14.5 14h-5M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' };
     }
   };
 
-  const { color, bgColor, icon } = getSentimentDetails();
+  const { color, barBg, icon } = getSentimentStyling();
+  // Map -1.0 to 1.0 -> 0% to 100%
   const scorePercentage = ((sentiment.score + 1) / 2) * 100;
 
   return (
-    <div className={`p-4 rounded-lg ${bgColor}`}>
-      <div className="flex items-center gap-4">
-        <div className={`text-3xl ${color}`}>{icon}</div>
-        <div>
-          <h4 className={`text-md font-semibold ${color}`}>{sentiment.label} Sentiment</h4>
-          <p className="text-sm text-gray-400">
-            Score: <span className="font-bold text-gray-200">{sentiment.score.toFixed(2)}</span>
-          </p>
+    <div className="bg-gray-900/40 p-5 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
+      <div className="flex justify-between items-center mb-4">
+        <h4 className={`text-lg font-bold ${color} flex items-center gap-2`}>
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} /></svg>
+            {sentiment.label} Sentiment
+        </h4>
+        <div className="text-right">
+            <span className="text-2xl font-black text-white">{sentiment.score.toFixed(2)}</span>
+            <span className="text-xs text-gray-500 block uppercase tracking-widest">Score</span>
         </div>
       </div>
-       <div className="mt-3 w-full bg-gray-700 rounded-full h-2">
-          <div
-            className={`h-2 rounded-full ${sentiment.label === 'Positive' ? 'bg-green-500' : sentiment.label === 'Negative' ? 'bg-red-500' : 'bg-yellow-500'}`}
-            style={{ width: `${scorePercentage}%` }}
-          ></div>
+      <div className="relative pt-1">
+        <div className="overflow-hidden h-2 mb-4 text-xs flex rounded-full bg-gray-800">
+          <div style={{ width: `${scorePercentage}%` }} className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center ${barBg} transition-all duration-1000`}></div>
         </div>
+        <div className="flex justify-between text-xs text-gray-500">
+            <span>-1.0 (Negative)</span>
+            <span>0</span>
+            <span>+1.0 (Positive)</span>
+        </div>
+      </div>
     </div>
   );
 };
 
-const EmotionIndicator: React.FC<{ emotion: Emotion }> = ({ emotion }) => {
+const EmotionCard: React.FC<{ emotion: Emotion }> = ({ emotion }) => {
   const getEmotionDetails = () => {
-    const label = emotion.label.toLowerCase();
-    if (label.includes('joy') || label.includes('happy')) return { color: 'text-yellow-400', bgColor: 'bg-yellow-900/50', icon: <Icon name="joy" /> };
-    if (label.includes('sad') || label.includes('sorrow')) return { color: 'text-blue-400', bgColor: 'bg-blue-900/50', icon: <Icon name="sadness" /> };
-    if (label.includes('anger') || label.includes('angry')) return { color: 'text-red-500', bgColor: 'bg-red-900/50', icon: <Icon name="anger" /> };
-    if (label.includes('surprise')) return { color: 'text-purple-400', bgColor: 'bg-purple-900/50', icon: <Icon name="surprise" /> };
-    if (label.includes('calm') || label.includes('peace')) return { color: 'text-teal-400', bgColor: 'bg-teal-900/50', icon: <Icon name="calm" /> };
-    if (label.includes('fear')) return { color: 'text-indigo-400', bgColor: 'bg-indigo-900/50', icon: <Icon name="fear" /> };
-    return { color: 'text-gray-300', bgColor: 'bg-gray-700/50', icon: <Icon name="emotion_default" /> };
+    const label = emotion.label;
+    if (label === 'Happy (Joy)') return { color: 'text-amber-300', iconName: 'joy' };
+    if (label === 'Sad') return { color: 'text-blue-400', iconName: 'sadness' };
+    if (label === 'Angry') return { color: 'text-red-500', iconName: 'anger' };
+    if (label === 'Surprised') return { color: 'text-fuchsia-400', iconName: 'surprise' };
+    if (label === 'Disgusted') return { color: 'text-green-500', iconName: 'disgust' }; // Note: you may need a custom icon for disgust if Icon component lacks it, falling back to default is fine.
+    if (label === 'Fearful') return { color: 'text-indigo-400', iconName: 'fear' };
+    return { color: 'text-gray-300', iconName: 'emotion_default' };
   };
 
-  const { color, bgColor, icon } = getEmotionDetails();
+  const { color, iconName } = getEmotionDetails();
   const scorePercentage = emotion.score * 100;
 
   return (
-    <div className={`p-4 rounded-lg ${bgColor}`}>
-      <div className="flex items-center gap-4">
-        <div className={`text-3xl ${color}`}>{icon}</div>
-        <div>
-          <h4 className={`text-md font-semibold ${color}`}>{emotion.label}</h4>
-          <p className="text-sm text-gray-400">
-            Confidence: <span className="font-bold text-gray-200">{emotion.score.toFixed(2)}</span>
-          </p>
-        </div>
+    <div className="bg-gray-900/40 p-5 rounded-2xl border border-white/5 hover:border-white/10 transition-colors flex flex-col justify-center h-full relative overflow-hidden">
+      <div className={`absolute -bottom-10 -right-10 w-32 h-32 rounded-full blur-[50px] opacity-20 bg-current ${color}`}></div>
+      <div className="relative z-10 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className={`p-3 bg-black/40 rounded-xl ${color}`}>
+                <Icon name={iconName} className="w-8 h-8" />
+            </div>
+            <div>
+              <h4 className="text-gray-400 text-xs uppercase tracking-widest mb-1">Dominant Emotion</h4>
+              <p className={`text-2xl font-bold ${color}`}>{emotion.label}</p>
+            </div>
+          </div>
+          <div className="text-right">
+              <span className="text-xl font-bold text-white">{emotion.score.toFixed(2)}</span>
+              <span className="text-xs text-gray-500 block uppercase tracking-widest mb-2">Confidence</span>
+          </div>
       </div>
-      <div className="mt-3 w-full bg-gray-700 rounded-full h-2">
-        <div
-          className="h-2 rounded-full bg-gradient-to-r from-gray-500 to-current"
-          style={{ width: `${scorePercentage}%`, color: `var(${color})` }}
-        ></div>
+      <div className="relative z-10 mt-4 w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+        <div className="h-full rounded-full bg-gradient-to-r from-gray-600 to-current transition-all duration-1000" style={{ width: `${scorePercentage}%`, color: `var(--tw-text-opacity) ${color}` }}></div>
       </div>
     </div>
   );
 };
 
-
 export const AnalysisResultDisplay: React.FC<{ result: AnalysisResult }> = ({ result }) => {
   return (
-    <div className="bg-gray-800/50 border border-gray-700 p-6 rounded-2xl shadow-lg animate-fade-in space-y-6">
-      <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-3">
-        <Icon name="analysis" />
-        Analysis Report
-      </h2>
+    <div className="bg-[#1a1d24]/90 backdrop-blur-xl border border-gray-800 p-8 rounded-3xl shadow-2xl animate-fade-in-up mt-8">
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-6">
-            <div className="bg-gray-800 p-4 rounded-lg">
-                <h3 className="text-lg font-semibold text-gray-200 mb-2">Sentiment</h3>
-                <SentimentIndicator sentiment={result.sentiment} />
+      {/* Header Section */}
+      <div className="border-b border-gray-800 pb-6 mb-8 flex items-center justify-between">
+          <h2 className="text-3xl font-extrabold text-white flex items-center gap-3">
+            <div className="p-2 bg-blue-600/20 rounded-xl text-blue-500">
+                <Icon name="analysis" className="w-6 h-6"/>
             </div>
-            <div className="bg-gray-800 p-4 rounded-lg">
-                <h3 className="text-lg font-semibold text-gray-200 mb-2">Dominant Emotion</h3>
-                <EmotionIndicator emotion={result.emotion} />
-            </div>
-        </div>
-        <div className="bg-gray-800 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold text-gray-200 mb-3 flex items-center gap-2">
-                <Icon name="reaction" className="h-5 w-5"/>
-                Predicted Audience Reaction
-            </h3>
-            <div className="flex flex-wrap gap-2">
-                {result.userReaction.map((reaction, index) => (
-                    <span key={index} className="bg-blue-900/70 text-blue-300 text-sm font-medium px-3 py-1.5 rounded-full shadow-sm">
-                        {reaction}
-                    </span>
-                ))}
-            </div>
-        </div>
+            Media Insights Report
+          </h2>
+          <div className="flex items-center gap-2">
+              <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+              </span>
+              <span className="text-gray-400 text-sm font-mono tracking-wider text-green-400">ANALYSIS COMPLETE</span>
+          </div>
       </div>
+      
+      {/* Grid Layout for Metrics */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <SentimentGauge sentiment={result.sentiment} />
+        <EmotionCard emotion={result.emotion} />
+      </div>
+
+      {/* New Predicted Audience Reaction Section */}
+      <div className="bg-gradient-to-br from-indigo-900/50 via-purple-900/30 to-gray-900/50 p-8 rounded-3xl border border-purple-500/20 relative overflow-hidden group">
+         <div className="absolute top-0 right-0 w-64 h-64 bg-purple-600/10 rounded-full blur-[80px] -z-10 group-hover:bg-purple-600/20 transition-colors duration-700"></div>
+         
+         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 z-10 relative">
+             <div className="flex-1">
+                 <h3 className="text-sm font-bold tracking-widest text-purple-300 uppercase mb-4 flex items-center gap-2">
+                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                     Social Media Prediction
+                 </h3>
+                 <p className="text-2xl font-bold text-white leading-tight mb-6">
+                     "{result.audienceReaction.prediction}"
+                 </p>
+                 
+                 <div className="w-full">
+                     <div className="flex justify-between items-center mb-2">
+                         <span className="text-sm text-gray-400 font-medium">Estimated Growth / Engagement Potential</span>
+                         <span className="text-white font-black text-xl">{result.audienceReaction.growthPercent}<span className="text-purple-400">%</span></span>
+                     </div>
+                     <div className="w-full bg-gray-800/80 h-3 rounded-full overflow-hidden shadow-inner">
+                         <div className="h-full bg-gradient-to-r from-purple-600 to-pink-500 rounded-full transition-all duration-1000 ease-out" style={{ width: `${result.audienceReaction.growthPercent}%` }}></div>
+                     </div>
+                 </div>
+             </div>
+
+             <div className="w-full md:w-auto min-w-[250px] bg-black/30 p-6 rounded-2xl border border-white/5 backdrop-blur-sm">
+                 <h4 className="text-xs text-gray-500 uppercase tracking-widest mb-4">Predicted Keywords</h4>
+                 <div className="flex flex-wrap gap-2">
+                     {result.audienceReaction.keywords.map((keyword, index) => (
+                         <span key={index} className="bg-purple-500/10 text-purple-300 text-sm font-semibold px-4 py-2 rounded-xl border border-purple-500/20 hover:bg-purple-500/20 transition-colors">
+                             #{keyword}
+                         </span>
+                     ))}
+                 </div>
+             </div>
+         </div>
+      </div>
+      
     </div>
   );
 };
