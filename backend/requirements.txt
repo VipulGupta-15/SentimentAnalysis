@@ -8,3 +8,4 @@ google-api-python-client==2.50.0
 protobuf==3.19.0
 pip==23.1.2
 numpy<2
+gunicorn
