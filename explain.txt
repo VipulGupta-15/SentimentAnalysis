@@ -1,0 +1,101 @@
+# The Ultimate Guide: Transitioning Media Insight AI from Cloud APIs to Local Open-Source Models
+
+This comprehensive document breaks down every single theoretical layer required to replicate the exact capabilities of the current "Media Insight AI" using only 100% locally-hosted, self-trained, open-source machine learning models. 
+
+By removing dependencies on Google Gemini or OpenAI APIs, you gain total data sovereignty, zero ongoing API costs, and absolute architectural freedom. However, you trade simplicity for extreme complexity, requiring a robust Python backend (FastAPI/Django) and high-end GPU hardware (e.g., NVIDIA RTX 4090s or AWS EC2 g5 instances).
+
+---
+
+## 1. Architectural Overview & The "Pipeline" Concept
+Currently, the `geminiService.ts` file takes an image/video, attaches a prompt, and makes ONE API call. Gemini handles the heavy lifting of extracting meaning, assigning emotions, predicting virality, and writing the summary simultaneously.
+
+To do this locally, you must fracture this into a **Sequential Machine Learning Pipeline** consisting of 4 distinct "Worker" models.
+
+#### The 4-Stage Local Pipeline
+1.  **Perception Layer:** Extracting raw meaning from pixels and audio waves.
+2.  **Classification Layer:** Structuring the raw meaning into Sentiment and Emotion buckets.
+3.  **Regression Layer:** Calculating the 0-100 Virality and Brand Safety scores.
+4.  **Generative Layer:** Writing the 5-sentence Executive Summary and Keywords.
+
+---
+
+## 2. Stage-by-Stage Implementation Guide
+
+### Stage 1: The Perception Layer (Feature Extraction)
+You cannot pass an MP4 file directly into a predictive model. You must convert the media into numbers (Vector Embeddings) and raw text.
+
+**For Visuals (Images & Video Frames):**
+*   **The Model:** Use a pre-trained Vision Transformer (ViT). Open-source options include `CLIP` (OpenAI/HuggingFace), `BLIP-2` (Salesforce), or `LLaVA` (if you need it to literally "describe" the image in text).
+*   **The Process:** For an image, pass it to CLIP. CLIP outputs a 512-dimensional vector array that mathematically represents *what* is in the image (e.g., "a person smiling at a computer"). For videos, you must write a Python script using OpenCV (`cv2`) to extract 1 frame every 3 seconds, run each frame through CLIP, and average the vectors together.
+
+**For Audio (Speech-to-Text):**
+*   **The Model:** Use the open-source `Whisper` (v3) model via HuggingFace.
+*   **The Process:** Use `FFmpeg` to strip the `.wav` audio track from the uploaded video. Pass the audio to Whisper to get a highly accurate text transcript.
+
+### Stage 2: The Classification Layer (Sentiment & Emotion)
+Now you have the text transcript and the visual vector embeddings. You must classify these into your strict 7-emotion schema.
+
+**Text Sentiment (from Whisper Transcript):**
+*   **The Model:** A lightweight NLP model like `RoBERTa-base` or `DistilBERT`.
+*   **The Training:** You must fine-tune this model using PyTorch/TensorFlow. Download the *GoEmotions* dataset (which contains thousands of Reddit comments labeled with specific emotions). Train RoBERTa for 10-20 Epochs so it learns how to correctly categorize text into "Happy", "Angry", "Neutral", etc.
+
+**Facial Emotion Recognition (FER):**
+*   **The Model:** Use an open-source visual emotion classifier like `DeepFace` or a pre-trained ResNet-50 block.
+*   **The Process:** Run DeepFace across the video frames. It specifically looks for human faces and outputs a 0.0-1.0 confidence score for the 7 standard emotions.
+
+**The Fusion Matrix:**
+*   You must write a custom Python function to "fuse" the text emotion score and the facial emotion score to decide the single **Dominant Emotion**. (e.g., If the text is 80% happy, but the face is 90% fearful, the algorithm must prioritize the visual cue).
+
+### Stage 3: The Regression Layer (Virality & Safety Prediction)
+This is the hardest part. You must replace the "Agency Expert" persona with hard math to calculate the `growthPercent` (0-100) and `BrandSafetyScore` (0-100).
+
+**The Dataset Required:**
+To train a predictive algorithm, you need massive amounts of historical data. You would need to scrape 10,000+ TikToks/Reels. For each post, you need:
+1.  The Visual Embeddings (from Stage 1)
+2.  The Transcript (from Stage 1)
+3.  The Dominant Emotion (from Stage 2)
+4.  The Target Platform & Demographic
+5.  **THE GROUND TRUTH:** The actual views/likes the post received (normalized to 0-100), and whether it was ever flagged/removed for safety violations.
+
+**The Model:**
+*   You do not need an LLM for this. You need a Regressor algorithm. Use `XGBoost` or train a custom Multi-Layer Perceptron (MLP) Neural Network in PyTorch.
+*   Feed the 5 inputs into the XGBoost model. Because it was trained on the historical dataset, it will learn the complex relationships (e.g., "Surprise" + "Fast Paced Vectors" + "TikTok" = High Virality). In production, it will spit out a highly accurate 85% virality prediction based purely on mathematical precedent, not LLM "guessing".
+
+### Stage 4: The Generative Layer (The Executive Summary)
+The React frontend still expects a clean JSON payload containing the 5-sentence `executiveSummary` and the `keywords` array. You MUST use a local LLM to generate this.
+
+**The Model:**
+*   Download Meta's `Llama-3-8B-Instruct` or Mistral's `Mistral-7B-v0.2` locally.
+*   **Hosting:** Run the model using `vLLM` (for insane speed) or `Ollama` (for easiest setup) on your GPU server.
+
+**The Prompt Engineering Engine:**
+Instead of passing the raw image to the LLM (which is horribly slow locally), you pass it the *calculated data*.
+You write a Python script that formats a prompt:
+> *System: You are an agency Executive summarizer.*
+> *Context: A video was uploaded. Our internal algorithms detected the emotion is SAD (90%), the sentiment is NEGATIVE (-0.8). It is targeting Gen-Z on TikTok. The predicted virality is 20%. The brand safety is High Risk.*
+> *Task: Write a 4 sentence executive summary explaining why this post will fail, and list 3 relevant keywords.*
+
+The local Llama-3 model reads this instantaneous text prompt and generates the final English summary and keywords in milliseconds.
+
+---
+
+## 3. The Backend Infrastructure Stack
+You must build a complete API server to connect your React frontend to this Python ML pipeline.
+
+**1. The API Gateway (FastAPI):**
+*   Replace Node.js entirely for the AI logic. Use Python's `FastAPI`. It is fully asynchronous and handles massive file uploads perfectly for ML payloads.
+*   Your React frontend will `POST` the video/audio directly to `http://localhost:8000/api/analyze-local`.
+
+**2. Asynchronous Task Queues (Celery + Redis):**
+*   Running this 4-stage pipeline might take 5-15 seconds per video. If two users upload a video at the same time, your server will crash.
+*   You must implement `Celery` (a Python task queue) backed by `Redis` (an in-memory database).
+*   FastAPI accepts the video, hands it to Celery, and returns a "Processing Job ID" to React. React then polls the server every 2 seconds until the job is done.
+
+**3. Hardware Requirements:**
+*   You cannot run this on a standard MacBook (unless it's an M2/M3 Max with 64GB+ Unified Memory).
+*   You need CUDA-enabled NVIDIA GPUs. Specifically, one RTX 4090 (24GB VRAM) or an AWS `g5.2xlarge` cloud instance to load Llama-3, CLIP, Whisper, and XGBoost into memory simultaneously.
+
+---
+
+## Summary Conclusion
+By building this pipeline (Perception -> Classification -> Regression -> Generation), you convert a "Black Box" cloud API into a massive, proprietary, enterprise-grade AI engine. You own the code, you own the weights, and the accuracy of your Virality predictions will far exceed Gemini's, because you trained the XGBoost regressor explicitly on your own historical social media agency data.
