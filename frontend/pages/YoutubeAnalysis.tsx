@@ -63,7 +63,12 @@ export const YoutubeAnalysis: React.FC = () => {
         setData(null);
 
         try {
-            const response = await axios.post('http://localhost:8000/api/analyze-youtube', { url });
+            // Automatically switch between Local and Production APIs based on the frontend URL
+            const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                ? 'http://localhost:8000' 
+                : 'https://sentiment-analysis-72om.onrender.com';
+            
+            const response = await axios.post(`${API_BASE_URL}/api/analyze-youtube`, { url });
             setData(response.data);
         } catch (err) {
             console.error(err);
